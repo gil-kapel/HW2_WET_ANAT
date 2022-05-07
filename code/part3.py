@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import copy
-from . import video_to_frames
+from utils import video_to_frames
 
 
 def poisson_noisy_image(orig_img, a):
@@ -124,16 +124,15 @@ def main():
     dim = (int(red_channel.shape[1] / 2), int(red_channel.shape[0] / 2))
     resized_red_image = cv2.resize(red_channel, dim)
     cv2.imshow("resized_red_image", resized_red_image)
-    noisy_img = poisson_noisy_image(resized_red_image, 0.5)
-    cv2.imshow("noisy_img", noisy_img)
+    noisy_img = poisson_noisy_image(resized_red_image, 1/3)
     cv2.destroyAllWindows()
+    cv2.imshow("noisy_img", noisy_img)
 
     # section 3.b
     make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_l2, 50, 0.5, 0)
 
     # section 3.c
-    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv, 200, 20, 1e-4)
-    cv2.destroyAllWindows()
+    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv, 200, 20, 2e-4)
 
     #   section 3.d
     #   section 3.e
@@ -146,8 +145,8 @@ def main():
     cv2.imshow("resized_red_image", resized_red_image)
     noisy_img = poisson_noisy_image(resized_red_image, 3)
     cv2.imshow("noisy_img", noisy_img)
-    make_restoration_and_error_graph(resized_red_image, noisy_img, denoise_by_l2)
-    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv)
+    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_l2, 50, 0.5, 0)
+    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv, 200, 20, 2e-4)
 
 
 if __name__ == '__main__':
