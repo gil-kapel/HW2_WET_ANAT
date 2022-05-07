@@ -2,46 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import copy
-
-
-def video_to_frames(vid_path: str, start_second, end_second):
-    """
-    Load a video and return its frames from the wanted time range.
-    :param vid_path: video file path.
-    :param start_second: time of first frame to be taken from the
-    video in seconds.
-    :param end_second: time of last frame to be taken from the
-    video in seconds.
-    :return:
-    frame_set: a 4D uint8 np array of size [num_of_frames x H x W x C]
-    containing the wanted video frames.
-    """
-    # ====== YOUR CODE: ======
-    # ========================
-    cap = cv2.VideoCapture(vid_path)
-    frame_set = []
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    video_time = cap.get(cv2.CAP_PROP_FRAME_COUNT) / fps
-    i = 0  # iterator to iterate one frame each loop
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if start_second * fps > i:  # continue until you get to the required start second
-            i += 1
-            continue
-        if end_second * fps < i:  # stop when you get to the required end second
-            if end_second == start_second and end_second > 0:
-                frame_set.append(cv2.cvtColor(frame, None))
-            break
-        if not ret or video_time < end_second:
-            print('wrong input')
-            return
-        frame_set.append(cv2.cvtColor(frame, None))
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        i += 1
-    cap.release()
-    cv2.destroyAllWindows()
-    return np.array(frame_set)
+from . import video_to_frames
 
 
 def poisson_noisy_image(orig_img, a):
@@ -59,6 +20,12 @@ def poisson_noisy_image(orig_img, a):
     poisson_img = poisson_photons_img / a
     noisy_img = np.clip(poisson_img, 0, 255).astype('uint8')
     return noisy_img
+
+
+def double_conv(X, d_kernel, x_shape):
+    first_conv = cv2.filter2D(np.reshape(X, x_shape, order='F'), -1, d_kernel)
+    second_conv = cv2.filter2D(first_conv, -1, d_kernel)
+    return second_conv.flatten('F')
 
 
 def denoise_by_l2(Y, X, num_iter, lambda_reg, epsilon0=0):
@@ -79,26 +46,22 @@ def denoise_by_l2(Y, X, num_iter, lambda_reg, epsilon0=0):
     # ========================
     d_kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])
     x_shape = X.shape
-    Y = copy.deepcopy(Y).flatten('F')
-    X = copy.deepcopy(X).flatten('F')
+    Y = Y.flatten('F')
+    X = X.flatten('F')
     Xout = Y
+    Err1 = np.zeros(num_iter)
+    Err2 = np.zeros(num_iter)
     for k in range(num_iter):
-        double_con_X_k = double_conv(Xout, d_kernel, x_shape)
-        G_k = Xout + lambda_reg * double_con_X_k - Y
-        double_con_G_k = double_conv(G_k, d_kernel, x_shape)
-        mu = (G_k.transpose() @ G_k) / (G_k.transpose() @ G_k + lambda_reg * G_k.transpose() @ double_con_G_k)
-        Xout = (Xout - mu * G_k)
-    conv_X_out = (cv2.filter2D(np.reshape(Xout, x_shape, order='F'), -1, d_kernel)).flatten('F')
-    Err1 = (Xout - Y).transpose() @ (Xout - Y) + lambda_reg * (conv_X_out.transpose() @ conv_X_out)
-    Err2 = (Xout - X).transpose() @ (Xout - X)
+        double_conv_x_k = double_conv(Xout, d_kernel, x_shape)
+        G_k = Xout + lambda_reg * double_conv_x_k - Y
+        double_conv_g_k = double_conv(G_k, d_kernel, x_shape)
+        mu = (G_k.transpose() @ G_k) / (G_k.transpose() @ G_k + lambda_reg * G_k.transpose() @ double_conv_g_k)
+        Xout = Xout - mu * G_k
+        conv_X_out = (cv2.filter2D(np.reshape(Xout, x_shape, order='F'), -1, d_kernel)).flatten('F')
+        Err1[k] = (Xout - Y).transpose() @ (Xout - Y) + lambda_reg * (conv_X_out.transpose() @ conv_X_out)
+        Err2[k] = (Xout - X).transpose() @ (Xout - X)
     Xout = np.reshape(Xout, x_shape, order='F').astype('uint8')
     return Xout, Err1, Err2
-
-
-def double_conv(X, d_kernel, x_shape):
-    first_conv = (cv2.filter2D(np.reshape(X, x_shape, order='F'), -1, d_kernel)).flatten('F')
-    double_conv = (cv2.filter2D(np.reshape(first_conv, x_shape, order='F'), -1, d_kernel)).flatten('F')
-    return double_conv
 
 
 def denoise_by_tv(Y, X, num_iter, lambda_reg, epsilon0):
@@ -118,33 +81,35 @@ def denoise_by_tv(Y, X, num_iter, lambda_reg, epsilon0):
     """
     # ====== YOUR CODE: ======
     # ========================
-    Y = copy.deepcopy(Y)
-    X = copy.deepcopy(X)
     Xout = Y
     mu = 150 * epsilon0
+    Err1 = np.zeros(num_iter)
+    Err2 = np.zeros(num_iter)
     for k in range(num_iter):
-        Xout_grad = np.gradient(np.gradient(Xout) / (np.sqrt(np.power(np.gradient(Xout), 2) + np.power(epsilon0, 2))))
-        U_k = 2 * (Y - Xout) + lambda_reg * Xout_grad
-        Xout = (Xout + mu * U_k / 2)
-    Xout_grad = np.power(np.gradient(Xout, axis=0), 2) + np.power(np.gradient(Xout, axis=1), 2)
-    TV = np.sum(np.sum(Xout_grad, axis=0), axis=0)
-    Err1 = (Xout - Y).transpose() @ (Xout - Y) + lambda_reg * TV
-    Err2 = (Xout - X).transpose() @ (Xout - X)
+        x_grad = np.gradient(Xout)
+        normal_x_grad = x_grad / np.sqrt(np.power(x_grad[0], 2) + np.power(x_grad[1], 2) + np.power(epsilon0, 2))
+        x_divergence = np.ufunc.reduce(np.add, [np.gradient(normal_x_grad[i], axis=i) for i in range(2)])
+        U_k = 2 * (Y - Xout) + lambda_reg * x_divergence
+        Xout = Xout + mu * U_k / 2
+        Xout_grad = np.sqrt(np.power(np.gradient(Xout)[0], 2) + np.power(np.gradient(Xout)[1], 2))
+        TV = np.sum(Xout_grad)
+        Err1[k] = (Xout.flatten('F') - Y.flatten('F')).transpose() @ (Xout.flatten('F') - Y.flatten('F')) + lambda_reg * TV
+        Err2[k] = (Xout.flatten('F') - X.flatten('F')).transpose() @ (Xout.flatten('F') - X.flatten('F'))
     Xout = Xout.astype('uint8')
     return Xout, Err1, Err2
 
 
-def make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_func):
-    Err1 = np.zeros(50)
-    Err2 = np.zeros(50)
-    Xout = None
+def make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_func, num_iter, lambda_reg, epsilon0):
     noisy_img = copy.deepcopy(noisy_img)
     resized_red_image = copy.deepcopy(resized_red_image)
-    for n in range(50):
-        Xout, Err1[n], Err2[n] = denoise_func(resized_red_image, noisy_img, n, 0.5, 1e-4)
-    n = np.linspace(0, 50, 50)
-    plt.plot(n, np.log2(Err1), 'r')
-    plt.plot(n, np.log2(Err2), 'b')
+    Xout, Err1, Err2 = denoise_func(noisy_img, resized_red_image, num_iter,
+                                    lambda_reg, epsilon0)
+    n = np.linspace(0, num_iter, num_iter)
+    plt.plot(n, np.log2(1 + Err1), 'r', label='Err1')
+    plt.plot(n, np.log2(1 + Err2), 'b', label='Err2')
+    plt.legend()
+    plt.xlabel('number of epochs')
+    plt.ylabel('error rate - log scale')
     cv2.imshow("restoration image", Xout)
     plt.show()
 
@@ -163,10 +128,11 @@ def main():
     cv2.imshow("noisy_img", noisy_img)
     cv2.destroyAllWindows()
 
-    #   section 3.b
-    make_restoration_and_error_graph(resized_red_image, noisy_img, denoise_by_l2)
-    #   section 3.c
-    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv)
+    # section 3.b
+    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_l2, 50, 0.5, 0)
+
+    # section 3.c
+    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv, 200, 20, 1e-4)
     cv2.destroyAllWindows()
 
     #   section 3.d
