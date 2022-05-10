@@ -52,3 +52,25 @@ def video_to_frames(vid_path: str, start_second, end_second):
     cap.release()
     cv2.destroyAllWindows()
     return np.array(frame_set)
+
+def match_corr(corr_obj, img):
+    """
+    return the center coordinates of the location of 'corr_obj' in 'img'.
+    :param corr_obj: 2D numpy array of size [H_obj x W_obj]
+    containing an image of a component.
+    :param img: 2D numpy array of size [H_img x W_img]
+    where H_img >= H_obj and W_img>=W_obj,
+    containing an image with the 'corr_obj' component in it.
+    :return:
+    match_coord: the two center coordinates in 'img'
+    of the 'corr_obj' component.
+    """
+    # ====== YOUR CODE: ======
+    object_conv = cv2.filter2D(corr_obj, -1, corr_obj, borderType=cv2.BORDER_CONSTANT)
+    object_max = object_conv.max()
+    image_corr = cv2.filter2D(img, -1, corr_obj, borderType=cv2.BORDER_CONSTANT)
+    match_coord = np.unravel_index((np.abs(image_corr - object_max)).argmin(), image_corr.shape)
+    # ========================
+
+    return match_coord
+
