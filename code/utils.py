@@ -53,6 +53,7 @@ def video_to_frames(vid_path: str, start_second, end_second):
     cv2.destroyAllWindows()
     return np.array(frame_set)
 
+
 def match_corr(corr_obj, img):
     """
     return the center coordinates of the location of 'corr_obj' in 'img'.

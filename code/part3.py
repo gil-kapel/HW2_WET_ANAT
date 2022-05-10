@@ -132,11 +132,10 @@ def main():
     make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_l2, 50, 0.5, 0)
 
     # section 3.c
-    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv, 200, 20, 2e-4)
+    make_restoration_and_error_graph(noisy_img, resized_red_image, denoise_by_tv, 200, 10, 2e-4)
 
     #   section 3.d
     #   section 3.e
-
     frames = video_to_frames('../given_data/Flash Gordon Trailer.mp4', 38, 39)
     bgr = frames[3]
     red_channel = bgr[:, :, 2]
