@@ -67,9 +67,9 @@ def match_corr(corr_obj, img):
     of the 'corr_obj' component.
     """
     # ====== YOUR CODE: ======
-    object_conv = cv2.filter2D(corr_obj, -1, corr_obj, borderType=cv2.BORDER_CONSTANT)
+    object_conv = cv2.filter2D(corr_obj.astype('int64'), -1, corr_obj.astype('int64'), borderType=cv2.BORDER_CONSTANT)
     object_max = object_conv.max()
-    image_corr = cv2.filter2D(img, -1, corr_obj, borderType=cv2.BORDER_CONSTANT)
+    image_corr = cv2.filter2D(img.astype('int64'), -1, corr_obj.astype('int64'), borderType=cv2.BORDER_CONSTANT)
     match_coord = np.unravel_index((np.abs(image_corr - object_max)).argmin(), image_corr.shape)
     # ========================
 

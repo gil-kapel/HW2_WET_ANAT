@@ -19,8 +19,8 @@ def main():
     len_panorama_img = int(2.5 * gray_corisca.shape[2])
     panorama_img = np.zeros((gray_corisca.shape[1], len_panorama_img))
     selected_frame = gray_corisca[125, :, :]
-    panorama_img[:,
-    int(0.75 * gray_corisca.shape[2]):(int(0.75 * gray_corisca.shape[2]) + gray_corisca.shape[2])] = selected_frame
+    panorama_img[:, int(0.75 * gray_corisca.shape[2]):(int(0.75 * gray_corisca.shape[2]) + gray_corisca.shape[2])] \
+        = selected_frame
 
     figure_selected_frame = plt.figure(figsize=(8, 8))
     plot_frame = figure_selected_frame.add_subplot(2, 1, 1)
@@ -31,8 +31,8 @@ def main():
     plot_frame.imshow(panorama_img, cmap="gray")
     plot_frame.set_title("panorama selected frame")
 
-    early_frm = corisca_frames[50, :, :]
-    later_frm = corisca_frames[200, :, :]
+    early_frm = gray_corisca[50, :, :]
+    later_frm = gray_corisca[200, :, :]
 
     figure_early_late = plt.figure(figsize=(8, 8))
     plot_frame = figure_early_late.add_subplot(2, 1, 2)
@@ -44,21 +44,24 @@ def main():
     plot_frame.set_title("later selected frame")
 
     # ----------------------------- section 1.d -------------------------------
-    rec_early_frm = early_frm[:, :int(0.75 * early_frm.shape[1])]
+    rec_early_frm = early_frm[:, :int(0.25 * early_frm.shape[1])]
     high_rec_early_cen_cord = int(early_frm.shape[0] / 2)
     len_rec_early_cen_cord = int(0.5 * 0.25 * early_frm.shape[1])
     rec_late_frm = later_frm[:, int(0.75 * later_frm.shape[1]):]
     high_rec_late_cen_cord = int(later_frm.shape[0] / 2)
     len_rec_late_cen_cord = int(0.75 * later_frm.shape[1] + 0.5 * 0.25 * later_frm.shape[1])
 
-    early_cor = match_corr(rec_early_frm, selected_frame)
-    later_cor = match_corr(rec_late_frm, selected_frame)
+    early_x, early_y = match_corr(rec_early_frm, selected_frame)
+    later_x, later_y = match_corr(rec_late_frm, selected_frame)
 
     rec_early_late_fig = plt.figure(figsize=(8, 8))
     plot_frame = rec_early_late_fig.add_subplot(2, 1, 1)
-    plot_frame.imshow(later_cor, cmap="gray")
-    plot_frame.set_title(f"earlier frame rectangle coordinate: %s" % (early_cor,))
+    plot_frame.imshow(rec_early_frm, cmap="gray")
+    plot_frame2 = rec_early_late_fig.add_subplot(2, 1, 2)
+    plot_frame2.imshow(rec_late_frm, cmap="gray")
+    plot_frame.set_title(f"Earlier and later rectangle frames")
     plt.show()
+    # ----------------------------- section 1.e -------------------------------
 
 
 if __name__ == '__main__':
