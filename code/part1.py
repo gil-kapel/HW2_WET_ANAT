@@ -57,9 +57,11 @@ def main():
     rec_early_late_fig = plt.figure(figsize=(8, 8))
     plot_frame = rec_early_late_fig.add_subplot(2, 1, 1)
     plot_frame.imshow(rec_early_frm, cmap="gray")
-    plot_frame2 = rec_early_late_fig.add_subplot(2, 1, 2)
-    plot_frame2.imshow(rec_late_frm, cmap="gray")
-    plot_frame.set_title(f"Earlier and later rectangle frames")
+    plot_frame.set_title(f"Earlier rectangle frames, coordinates: %s %s" % (early_x, early_y))
+
+    plot_frame = rec_early_late_fig.add_subplot(2, 1, 2)
+    plot_frame.imshow(rec_late_frm, cmap="gray")
+    plot_frame.set_title(f"Later rectangle frames, coordinates: %s %s" % (later_x, later_y))
 
     # ----------------------------- section 1.e -------------------------------
      earl_cor_high_diff = early_x - high_rec_early_cen_cord
