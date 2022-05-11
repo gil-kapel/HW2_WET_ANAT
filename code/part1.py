@@ -60,8 +60,50 @@ def main():
     plot_frame2 = rec_early_late_fig.add_subplot(2, 1, 2)
     plot_frame2.imshow(rec_late_frm, cmap="gray")
     plot_frame.set_title(f"Earlier and later rectangle frames")
-    plt.show()
+
     # ----------------------------- section 1.e -------------------------------
+     earl_cor_high_diff = early_x - high_rec_early_cen_cord
+    earl_cor_len_diff = early_y - len_rec_early_cen_cord
+    late_cor_high_diff = later_x - high_rec_late_cen_cord
+    late_cor_len_diff = later_y - len_rec_late_cen_cord
+    vid_s_1 = gray_corisca.shape[1]
+    vid_s_2 = gray_corisca.shape[2]
+
+    early_pan = np.zeros(panorama_img.shape)
+
+    first_frm_earl = 0
+    last_frm_earl = gray_corisca.shape[2]
+
+    early_pan[max(0, earl_cor_high_diff):min(vid_s_1, vid_s_1 + earl_cor_high_diff),
+    max(int(0.75 * vid_s_2) + earl_cor_len_diff, 0):min((int(0.75 * vid_s_2) + vid_s_2) + earl_cor_len_diff,
+                                                        panorama_img.shape[1])] = early_frm[
+                                                                                  max(0, earl_cor_high_diff):min(
+                                                                                      vid_s_1,
+                                                                                      vid_s_1 + earl_cor_high_diff),
+                                                                                  first_frm_earl:last_frm_earl]
+    late_pan = np.zeros(panorama_img.shape)
+
+    first_frm_late = 0
+    last_frm_late = gray_corisca.shape[2]
+
+    late_pan[max(0, late_cor_high_diff):min(vid_s_1, vid_s_1 + late_cor_high_diff),
+    max(int(0.75 * vid_s_2) + late_cor_len_diff, 0):min((int(0.75 * vid_s_2) + vid_s_2) + late_cor_len_diff,
+                                                        panorama_img.shape[1])] = later_frm[
+                                                                                  max(0, late_cor_high_diff):min(
+                                                                                      vid_s_1,
+                                                                                      vid_s_1 + late_cor_high_diff),
+                                                                                  first_frm_late:last_frm_late]
+
+    panorama_img = np.where(np.logical_and(panorama_img != 0, early_pan != 0), (early_pan + panorama_img)/2, panorama_img)
+    panorama_img = np.where(panorama_img == 0, early_pan, panorama_img)
+    panorama_img = np.where(np.logical_and(panorama_img != 0,late_pan != 0), (late_pan + panorama_img)/2, panorama_img)
+    panorama_img = np.where(panorama_img == 0, late_pan, panorama_img)
+
+    panorama_fig = plt.figure(figsize=(16, 5))
+    plot_frame = panorama_fig.add_subplot(1, 1, 1)
+    plot_frame.imshow(panorama_img, cmap="gray")
+    plot_frame.set_title("panorama image")
+    plt.show()
 
 
 if __name__ == '__main__':
